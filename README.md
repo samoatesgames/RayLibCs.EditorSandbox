@@ -1,6 +1,8 @@
 # RayLibCs.EditorSandbox
 Using Raylib_cs to see if some basic editor techniques can be implemented
 
+![features](./Media/editor-sandbox.gif)
+
 ## With thanks:
 
  * Gizmo - https://github.com/cloudofoz/raylib-gizmo/
