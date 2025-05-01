@@ -51,7 +51,26 @@ namespace RayLib.EditorTesting
             Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_BaseColor"), gridBaseColor, ShaderUniformDataType.Vec4);
             Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_LineColor"), gridLineColor, ShaderUniformDataType.Vec4);
 
+            // START - SKY
+            var skyMesh = Raylib.GenMeshCube(1.0f, 1.0f, 1.0f);
+            var skybox = Raylib.LoadModelFromMesh(skyMesh);
+            if (!TryLoadShader("Data/Shaders/skybox.vert", "Data/Shaders/skybox.frag", out var skyboxShader))
+            {
+                return;
+            }
+            Raylib.SetShaderValue(
+                skyboxShader,
+                Raylib.GetShaderLocation(skyboxShader, "environmentMap"),
+                (int)MaterialMapIndex.Cubemap,
+                ShaderUniformDataType.Int
+            );
+            Raylib.SetMaterialShader(ref skybox, 0, ref skyboxShader);
 
+            var skyboxImage = Raylib.LoadImage("Data/Textures/skybox.png");
+            var skyCube = Raylib.LoadTextureCubemap(skyboxImage, CubemapLayout.AutoDetect);
+            Raylib.SetMaterialTexture(ref skybox, 0, MaterialMapIndex.Cubemap, ref skyCube);
+            Raylib.UnloadImage(skyboxImage);
+            // END - SKY
 
             var outlineSize = 4;
             var outlineColor = new Vector4(1, 0.63f, 0, 1);
@@ -106,7 +125,7 @@ namespace RayLib.EditorTesting
                 {
                     gizmoMode = RayGizmo.GizmoFlags.GIZMO_ALL;
                 }
-                
+
                 if (Raylib.GetScreenWidth() != screenWidth || Raylib.GetScreenHeight() != screenHeight)
                 {
                     screenWidth = Raylib.GetScreenWidth();
@@ -130,12 +149,12 @@ namespace RayLib.EditorTesting
                     }
                 }
 
-                Raylib.SetShaderValue(gridShader, 
-                    Raylib.GetShaderLocation(gridShader, "cameraPos"), 
-                    camera.Position, 
+                Raylib.SetShaderValue(gridShader,
+                    Raylib.GetShaderLocation(gridShader, "cameraPos"),
+                    camera.Position,
                     ShaderUniformDataType.Vec3);
-                Raylib.SetShaderValueMatrix(gridShader, 
-                    Raylib.GetShaderLocation(gridShader, "modelWorldTransform"), 
+                Raylib.SetShaderValueMatrix(gridShader,
+                    Raylib.GetShaderLocation(gridShader, "modelWorldTransform"),
                     gridModel.Transform);
 
                 gridModel.Transform = RayGizmo.GizmoToMatrix(new Transform
@@ -147,11 +166,17 @@ namespace RayLib.EditorTesting
 
                 Raylib.BeginDrawing();
                 {
-                    Raylib.ClearBackground(Color.DarkGray);
+                    Raylib.ClearBackground(Color.RayWhite);
 
                     // Main Render
                     Raylib.BeginMode3D(camera);
                     {
+                        Rlgl.DisableBackfaceCulling();
+                        Rlgl.DisableDepthMask();
+                        Raylib.DrawModel(skybox, Vector3.Zero, 1.0f, Color.White);
+                        Rlgl.EnableBackfaceCulling();
+                        Rlgl.EnableDepthMask();
+
                         Raylib.BeginBlendMode(BlendMode.Alpha);
                         {
                             foreach (var renderEntity in renderEntities)
@@ -166,8 +191,6 @@ namespace RayLib.EditorTesting
                             Raylib.EndShaderMode();
                         }
                         Raylib.EndBlendMode();
-
-                        
                     }
                     Raylib.EndMode3D();
 
