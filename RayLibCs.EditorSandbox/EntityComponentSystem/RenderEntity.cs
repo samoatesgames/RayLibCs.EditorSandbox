@@ -9,6 +9,7 @@ namespace RayLibCs.EditorSandbox.EntityComponentSystem
         private Model m_model;
         private Transform m_transform;
 
+        public bool IsHovered { get; set; }
         public bool IsSelected { get; set; }
 
         public RenderEntity(string modelPath, string albedoTexturePath)

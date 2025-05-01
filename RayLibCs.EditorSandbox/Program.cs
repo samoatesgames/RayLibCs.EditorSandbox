@@ -101,6 +101,8 @@ namespace RayLib.EditorTesting
             var gizmoMode = RayGizmo.GizmoFlags.GIZMO_TRANSLATE;
             var gizmoTransform = RayGizmo.GizmoIdentity();
 
+            var showImGui = true;
+
             while (!Raylib.WindowShouldClose())
             {
                 if (Raylib.IsMouseButtonDown(MouseButton.Right))
@@ -125,6 +127,10 @@ namespace RayLib.EditorTesting
                 {
                     gizmoMode = RayGizmo.GizmoFlags.GIZMO_ALL;
                 }
+                if (Raylib.IsKeyPressed(KeyboardKey.F1))
+                {
+                    showImGui = !showImGui;
+                }
 
                 if (Raylib.GetScreenWidth() != screenWidth || Raylib.GetScreenHeight() != screenHeight)
                 {
@@ -148,6 +154,10 @@ namespace RayLib.EditorTesting
                         renderEntity.UpdateTransform(gizmoTransform);
                     }
                 }
+
+                var hoveredEntities = renderEntities
+                    .Where(x => x.IsHovered)
+                    .ToArray();
 
                 Raylib.SetShaderValue(gridShader,
                     Raylib.GetShaderLocation(gridShader, "cameraPos"),
@@ -194,6 +204,38 @@ namespace RayLib.EditorTesting
                     }
                     Raylib.EndMode3D();
 
+                    if (hoveredEntities.Any())
+                    {
+                        // Render selected object in black
+                        Raylib.BeginTextureMode(renderTexture);
+                        {
+                            Raylib.ClearBackground(Color.White);
+
+                            Raylib.BeginMode3D(camera);
+                            {
+                                foreach (var renderEntity in hoveredEntities)
+                                {
+                                    renderEntity.Render(Color.Black);
+                                }
+                            }
+                            Raylib.EndMode3D();
+                        }
+                        Raylib.EndTextureMode();
+
+                        Raylib.SetShaderValue(outlineShader, Raylib.GetShaderLocation(outlineShader, "color"), Vector4.One, ShaderUniformDataType.Vec4);
+                        Raylib.SetShaderValue(outlineShader, Raylib.GetShaderLocation(outlineShader, "size"), outlineSize / 2, ShaderUniformDataType.Int);
+
+                        // Render outline
+                        Raylib.BeginShaderMode(outlineShader);
+                        {
+                            Raylib.DrawTextureRec(renderTexture.Texture,
+                                new Rectangle(0, 0, renderTexture.Texture.Width, -renderTexture.Texture.Height),
+                                Vector2.Zero,
+                                Color.White);
+                        }
+                        Raylib.EndShaderMode();
+                    }
+
                     if (selectedEntities.Any())
                     {
                         // Render selected object in black
@@ -211,6 +253,9 @@ namespace RayLib.EditorTesting
                             Raylib.EndMode3D();
                         }
                         Raylib.EndTextureMode();
+
+                        Raylib.SetShaderValue(outlineShader, Raylib.GetShaderLocation(outlineShader, "color"), outlineColor, ShaderUniformDataType.Vec4);
+                        Raylib.SetShaderValue(outlineShader, Raylib.GetShaderLocation(outlineShader, "size"), outlineSize, ShaderUniformDataType.Int);
 
                         // Render outline
                         Raylib.BeginShaderMode(outlineShader);
@@ -231,89 +276,92 @@ namespace RayLib.EditorTesting
                     }
 
                     // ImGUI
-                    rlImGui.Begin();
+                    if (showImGui)
                     {
-                        // Selection Info
-                        if (selectedEntities.Any())
+                        rlImGui.Begin();
                         {
-                            if (ImGui.Begin("Selected Entities"))
+                            // Selection Info
+                            if (selectedEntities.Any())
                             {
-                                foreach (var renderEntity in selectedEntities)
+                                if (ImGui.Begin("Selected Entities"))
                                 {
-                                    var transform = renderEntity.GetTransform();
-                                    var rotation = Raymath.QuaternionToEuler(transform.Rotation);
-                                    ImGui.Text($"Position: {transform.Translation.X:F2}, {transform.Translation.Y:F2}, {transform.Translation.Z:F2}");
-                                    ImGui.Text($"Rotation: {(rotation.X * Raylib.RAD2DEG):F2}, {(rotation.Y * Raylib.RAD2DEG):F2}, {(rotation.Z * Raylib.RAD2DEG):F2}");
-                                    ImGui.Text($"Scale: {transform.Scale.X:F2}, {transform.Scale.Y:F2}, {transform.Scale.Z:F2}");
-                                    ImGui.Text("");
+                                    foreach (var renderEntity in selectedEntities)
+                                    {
+                                        var transform = renderEntity.GetTransform();
+                                        var rotation = Raymath.QuaternionToEuler(transform.Rotation);
+                                        ImGui.Text($"Position: {transform.Translation.X:F2}, {transform.Translation.Y:F2}, {transform.Translation.Z:F2}");
+                                        ImGui.Text($"Rotation: {(rotation.X * Raylib.RAD2DEG):F2}, {(rotation.Y * Raylib.RAD2DEG):F2}, {(rotation.Z * Raylib.RAD2DEG):F2}");
+                                        ImGui.Text($"Scale: {transform.Scale.X:F2}, {transform.Scale.Y:F2}, {transform.Scale.Z:F2}");
+                                        ImGui.Text("");
+                                    }
+                                }
+                                ImGui.End();
+                            }
+
+                            // Selection Config
+                            if (ImGui.Begin("Selection Config"))
+                            {
+                                if (ImGui.ColorEdit4("Color", ref outlineColor))
+                                {
+                                    Raylib.SetShaderValue(outlineShader, Raylib.GetShaderLocation(outlineShader, "color"), outlineColor, ShaderUniformDataType.Vec4);
+                                }
+
+                                if (ImGui.SliderInt("Size", ref outlineSize, 1, 16))
+                                {
+                                    Raylib.SetShaderValue(outlineShader, Raylib.GetShaderLocation(outlineShader, "size"), outlineSize, ShaderUniformDataType.Int);
+                                }
+                            }
+                            ImGui.End();
+
+                            // Gizmo Config
+                            if (ImGui.Begin("Gizmo Config"))
+                            {
+                                ImGui.SliderFloat("Size", ref RayGizmo.GizmoConfig.GIZMO.gizmoSize, 0.5f, 3.0f);
+                                ImGui.SliderFloat("Line Width", ref RayGizmo.GizmoConfig.GIZMO.lineWidth, 0.5f, 5.0f);
+                                ImGui.SliderFloat("Plane Size", ref RayGizmo.GizmoConfig.GIZMO.trPlaneSizeFactor, 0.1f, 1.0f);
+                                ImGui.Text("");
+                                ImGuiColorEdit("X-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[0].color);
+                                ImGuiColorEdit("Y-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[1].color);
+                                ImGuiColorEdit("Z-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[2].color);
+                            }
+                            ImGui.End();
+
+                            // Grid Config
+                            if (ImGui.Begin("Grid Config"))
+                            {
+                                if (ImGui.SliderFloat("Bias", ref gridBias, 0.0f, 3.0f))
+                                {
+                                    Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_GridBias"), gridBias, ShaderUniformDataType.Float);
+                                }
+                                var gv = (int)gridDivides;
+                                if (ImGui.SliderInt("Divides", ref gv, 1, 100))
+                                {
+                                    gridDivides = gv;
+                                    Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_GridDiv"), gridDivides, ShaderUniformDataType.Float);
+                                }
+                                ImGui.Text("");
+                                if (ImGui.SliderFloat("Line Width", ref gridLineWidth, 0.0f, 5.0f))
+                                {
+                                    Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_LineWidth"), gridLineWidth, ShaderUniformDataType.Float);
+                                }
+                                if (ImGui.SliderFloat("Major Line Width", ref gridMajorLineWidth, 0.0f, 10.0f))
+                                {
+                                    Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_MajorLineWidth"), gridMajorLineWidth, ShaderUniformDataType.Float);
+                                }
+                                if (ImGui.ColorEdit4("Base Color", ref gridBaseColor))
+                                {
+                                    Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_BaseColor"), gridBaseColor, ShaderUniformDataType.Vec4);
+                                }
+                                if (ImGui.ColorEdit4("Line Color", ref gridLineColor))
+                                {
+                                    Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_LineColor"), gridLineColor, ShaderUniformDataType.Vec4);
                                 }
                             }
                             ImGui.End();
                         }
-
-                        // Selection Config
-                        if (ImGui.Begin("Selection Config"))
-                        {
-                            if (ImGui.ColorEdit4("Color", ref outlineColor))
-                            {
-                                Raylib.SetShaderValue(outlineShader, Raylib.GetShaderLocation(outlineShader, "color"), outlineColor, ShaderUniformDataType.Vec4);
-                            }
-
-                            if (ImGui.SliderInt("Size", ref outlineSize, 1, 16))
-                            {
-                                Raylib.SetShaderValue(outlineShader, Raylib.GetShaderLocation(outlineShader, "size"), outlineSize, ShaderUniformDataType.Int);
-                            }
-                        }
-                        ImGui.End();
-
-                        // Gizmo Config
-                        if (ImGui.Begin("Gizmo Config"))
-                        {
-                            ImGui.SliderFloat("Size", ref RayGizmo.GizmoConfig.GIZMO.gizmoSize, 0.5f, 3.0f);
-                            ImGui.SliderFloat("Line Width", ref RayGizmo.GizmoConfig.GIZMO.lineWidth, 0.5f, 5.0f);
-                            ImGui.SliderFloat("Plane Size", ref RayGizmo.GizmoConfig.GIZMO.trPlaneSizeFactor, 0.1f, 1.0f);
-                            ImGui.Text("");
-                            ImGuiColorEdit("X-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[0].color);
-                            ImGuiColorEdit("Y-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[1].color);
-                            ImGuiColorEdit("Z-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[2].color);
-                        }
-                        ImGui.End();
-
-                        // Grid Config
-                        if (ImGui.Begin("Grid Config"))
-                        {
-                            if (ImGui.SliderFloat("Bias", ref gridBias, 0.0f, 3.0f))
-                            {
-                                Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_GridBias"), gridBias, ShaderUniformDataType.Float);
-                            }
-                            var gv = (int)gridDivides;
-                            if (ImGui.SliderInt("Divides", ref gv, 1, 100))
-                            {
-                                gridDivides = gv;
-                                Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_GridDiv"), gridDivides, ShaderUniformDataType.Float);
-                            }
-                            ImGui.Text("");
-                            if (ImGui.SliderFloat("Line Width", ref gridLineWidth, 0.0f, 5.0f))
-                            {
-                                Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_LineWidth"), gridLineWidth, ShaderUniformDataType.Float);
-                            }
-                            if (ImGui.SliderFloat("Major Line Width", ref gridMajorLineWidth, 0.0f, 10.0f))
-                            {
-                                Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_MajorLineWidth"), gridMajorLineWidth, ShaderUniformDataType.Float);
-                            }
-                            if (ImGui.ColorEdit4("Base Color", ref gridBaseColor))
-                            {
-                                Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_BaseColor"), gridBaseColor, ShaderUniformDataType.Vec4);
-                            }
-                            if (ImGui.ColorEdit4("Line Color", ref gridLineColor))
-                            {
-                                Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_LineColor"), gridLineColor, ShaderUniformDataType.Vec4);
-                            }
-                        }
-                        ImGui.End();
+                        rlImGui.End();
                     }
-                    rlImGui.End();
-
+                    
                     Raylib.DrawFPS(10, 10);
                 }
                 Raylib.EndDrawing();
@@ -321,22 +369,28 @@ namespace RayLib.EditorTesting
                 // Update picking last, to ensure Gizmo state is up to date
                 if (!RayGizmo.IsGizmoTransforming() && !ImGui.IsAnyItemActive())
                 {
+                    var ray = Raylib.GetScreenToWorldRay(Raylib.GetMousePosition(), camera);
+
+                    RenderEntity? toSelect = null;
+                    var closest = float.MaxValue;
+
+                    foreach (var renderEntity in renderEntities)
+                    {
+                        renderEntity.IsHovered = false;
+                        if (renderEntity.IntersectsRay(ray, out var distance) && distance < closest)
+                        {
+                            if (toSelect != null)
+                            {
+                                toSelect.IsHovered = false;
+                            }
+                            closest = distance;
+                            toSelect = renderEntity;
+                            renderEntity.IsHovered = true;
+                        }
+                    }
+
                     if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                     {
-                        var ray = Raylib.GetScreenToWorldRay(Raylib.GetMousePosition(), camera);
-
-                        RenderEntity? toSelect = null;
-                        var closest = float.MaxValue;
-
-                        foreach (var renderEntity in renderEntities)
-                        {
-                            if (renderEntity.IntersectsRay(ray, out var distance) && distance < closest)
-                            {
-                                closest = distance;
-                                toSelect = renderEntity;
-                            }
-                        }
-
                         if (toSelect == null)
                         {
                             foreach (var selected in selectedEntities)
