@@ -18,13 +18,13 @@
     <None Update="Data\Models\crate_model.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Data\Shaders\grid.fs">
+    <None Update="Data\Shaders\grid.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Data\Shaders\grid.vs">
+    <None Update="Data\Shaders\grid.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Data\Shaders\outline.fs">
+    <None Update="Data\Shaders\outline.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Data\Textures\crate_texture.jpg">

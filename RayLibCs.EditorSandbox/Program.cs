@@ -31,7 +31,7 @@ namespace RayLib.EditorTesting
             var gridMesh = Raylib.GenMeshPlane(gridSize, gridSize, 10, 10);
             var gridModel = Raylib.LoadModelFromMesh(gridMesh);
 
-            if (!TryLoadShader("Data/Shaders/grid.vs", "Data/Shaders/grid.fs", out var gridShader))
+            if (!TryLoadShader("Data/Shaders/grid.vert", "Data/Shaders/grid.frag", out var gridShader))
             {
                 return;
             }
@@ -51,9 +51,11 @@ namespace RayLib.EditorTesting
             Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_BaseColor"), gridBaseColor, ShaderUniformDataType.Vec4);
             Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_LineColor"), gridLineColor, ShaderUniformDataType.Vec4);
 
+
+
             var outlineSize = 4;
             var outlineColor = new Vector4(1, 0.63f, 0, 1);
-            if (!TryLoadShader(null, "Data/Shaders/outline.fs", out var outlineShader))
+            if (!TryLoadShader(null, "Data/Shaders/outline.frag", out var outlineShader))
             {
                 return;
             }
