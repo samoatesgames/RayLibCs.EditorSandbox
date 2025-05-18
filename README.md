@@ -1,9 +1,16 @@
-# RayLibCs.EditorSandbox
-Using Raylib_cs to see if some basic editor techniques can be implemented
+# RayLib C# - Editor Viewport Sandbox
 
-![features](./Media/editor-sandbox.gif)
+This repository makes use of RayLibCs and implements some core features required for an editor viewport. This is still a work in progress but provides the following features:
+
+ * Selection with Gizmo interaction.
+ * Outline selection shader.
+ * Infinite world grid.
+
+![features](https://raw.githubusercontent.com/samoatesgames/RayLibCs.EditorSandbox/refs/heads/main/Media/editor-sandbox.gif)
 
 ## With thanks:
+
+This repository combines the following feature sets and ports them to RayLibCs.
 
  * Gizmo - https://github.com/cloudofoz/raylib-gizmo/
  * Outline - https://github.com/denysmaistruk/raylib-model-outline/
