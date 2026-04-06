@@ -67,7 +67,7 @@ namespace RayLib.EditorTesting
             RenderTexture2D renderTexture = Raylib.LoadRenderTexture(screenWidth, screenHeight);
 
             var renderEntities = new List<RenderEntity>();
-            for (var i = -100; i <= 100; ++i)
+            for (var i = -0; i <= 0; ++i)
             {
                 var crate = new RenderEntity("Data/Models/crate_model.obj", "Data/Textures/crate_texture.jpg");
                 crate.UpdateTransform(new Transform
@@ -157,12 +157,12 @@ namespace RayLib.EditorTesting
 
                 Raylib.BeginDrawing();
                 {
-                    Raylib.ClearBackground(Color.RayWhite);
+                    Raylib.ClearBackground(Color.Magenta);
 
                     // Main Render
                     Raylib.BeginMode3D(camera);
                     {
-                        skybox.Render();
+                        skybox.Render(camera);
 
                         Raylib.BeginBlendMode(BlendMode.Alpha);
                         {
@@ -297,9 +297,9 @@ namespace RayLib.EditorTesting
                                 ImGui.SliderFloat("Line Width", ref RayGizmo.GizmoConfig.GIZMO.lineWidth, 0.5f, 5.0f);
                                 ImGui.SliderFloat("Plane Size", ref RayGizmo.GizmoConfig.GIZMO.trPlaneSizeFactor, 0.1f, 1.0f);
                                 ImGui.Text("");
-                                ImGuiColorEdit("X-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[0].color);
-                                ImGuiColorEdit("Y-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[1].color);
-                                ImGuiColorEdit("Z-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[2].color);
+                                ShaderUtils.ImGuiColorEdit("X-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[0].color);
+                                ShaderUtils.ImGuiColorEdit("Y-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[1].color);
+                                ShaderUtils.ImGuiColorEdit("Z-axis Color", ref RayGizmo.GizmoConfig.GIZMO.axisCfg[2].color);
                             }
                             ImGui.End();
 
@@ -335,6 +335,9 @@ namespace RayLib.EditorTesting
                                 }
                             }
                             ImGui.End();
+
+                            // Skybox
+                            skybox.DrawImGui();
                         }
                         rlImGui.End();
                     }
@@ -390,15 +393,6 @@ namespace RayLib.EditorTesting
             }
 
             Raylib.CloseWindow();
-        }
-
-        private static void ImGuiColorEdit(string name, ref Color color)
-        {
-            var vecColor = new Vector4(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
-            if (ImGui.ColorEdit4(name, ref vecColor))
-            {
-                color = new Color(vecColor.X, vecColor.Y, vecColor.Z, vecColor.W);
-            }
         }
     }
 }
