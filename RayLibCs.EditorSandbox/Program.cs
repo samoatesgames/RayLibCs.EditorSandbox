@@ -31,7 +31,7 @@ namespace RayLib.EditorTesting
             var gridMesh = Raylib.GenMeshPlane(gridSize, gridSize, 10, 10);
             var gridModel = Raylib.LoadModelFromMesh(gridMesh);
 
-            if (!TryLoadShader("Data/Shaders/grid.vert", "Data/Shaders/grid.frag", out var gridShader))
+            if (!ShaderUtils.TryLoadShader("Data/Shaders/grid.vert", "Data/Shaders/grid.frag", out var gridShader))
             {
                 return;
             }
@@ -51,30 +51,11 @@ namespace RayLib.EditorTesting
             Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_BaseColor"), gridBaseColor, ShaderUniformDataType.Vec4);
             Raylib.SetShaderValue(gridShader, Raylib.GetShaderLocation(gridShader, "_LineColor"), gridLineColor, ShaderUniformDataType.Vec4);
 
-            // START - SKY
-            var skyMesh = Raylib.GenMeshCube(1.0f, 1.0f, 1.0f);
-            var skybox = Raylib.LoadModelFromMesh(skyMesh);
-            if (!TryLoadShader("Data/Shaders/skybox.vert", "Data/Shaders/skybox.frag", out var skyboxShader))
-            {
-                return;
-            }
-            Raylib.SetShaderValue(
-                skyboxShader,
-                Raylib.GetShaderLocation(skyboxShader, "environmentMap"),
-                (int)MaterialMapIndex.Cubemap,
-                ShaderUniformDataType.Int
-            );
-            Raylib.SetMaterialShader(ref skybox, 0, ref skyboxShader);
-
-            var skyboxImage = Raylib.LoadImage("Data/Textures/skybox.png");
-            var skyCube = Raylib.LoadTextureCubemap(skyboxImage, CubemapLayout.AutoDetect);
-            Raylib.SetMaterialTexture(ref skybox, 0, MaterialMapIndex.Cubemap, ref skyCube);
-            Raylib.UnloadImage(skyboxImage);
-            // END - SKY
+            var skybox = new Skybox();
 
             var outlineSize = 4;
             var outlineColor = new Vector4(1, 0.63f, 0, 1);
-            if (!TryLoadShader(null, "Data/Shaders/outline.frag", out var outlineShader))
+            if (!ShaderUtils.TryLoadShader(null, "Data/Shaders/outline.frag", out var outlineShader))
             {
                 return;
             }
@@ -86,7 +67,7 @@ namespace RayLib.EditorTesting
             RenderTexture2D renderTexture = Raylib.LoadRenderTexture(screenWidth, screenHeight);
 
             var renderEntities = new List<RenderEntity>();
-            for (var i = -1; i <= 1; ++i)
+            for (var i = -100; i <= 100; ++i)
             {
                 var crate = new RenderEntity("Data/Models/crate_model.obj", "Data/Textures/crate_texture.jpg");
                 crate.UpdateTransform(new Transform
@@ -181,11 +162,7 @@ namespace RayLib.EditorTesting
                     // Main Render
                     Raylib.BeginMode3D(camera);
                     {
-                        Rlgl.DisableBackfaceCulling();
-                        Rlgl.DisableDepthMask();
-                        Raylib.DrawModel(skybox, Vector3.Zero, 1.0f, Color.White);
-                        Rlgl.EnableBackfaceCulling();
-                        Rlgl.EnableDepthMask();
+                        skybox.Render();
 
                         Raylib.BeginBlendMode(BlendMode.Alpha);
                         {
@@ -413,14 +390,6 @@ namespace RayLib.EditorTesting
             }
 
             Raylib.CloseWindow();
-        }
-
-        private static bool TryLoadShader(string? vertexShaderPath, string? fragmentShaderPath, out Shader shader)
-        {
-            var vert = vertexShaderPath != null ? File.ReadAllText(vertexShaderPath) : null;
-            var frag = fragmentShaderPath != null ? File.ReadAllText(fragmentShaderPath) : null;
-            shader = Raylib.LoadShaderFromMemory(vert, frag);
-            return shader.Id != 0;
         }
 
         private static void ImGuiColorEdit(string name, ref Color color)
